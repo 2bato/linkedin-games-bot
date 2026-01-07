@@ -1,6 +1,5 @@
 /**
  * LinkedIn Tango Auto-Solver
- * Automatically solves the Tango puzzle game (sun/moon grid puzzle)
  */
 
 (function () {
@@ -48,8 +47,9 @@
       cells[row][col] = cell;
 
       // Detect cell state from the SVG aria-label inside .lotka-cell-content
+      const isLocked = cell.classList.contains("lotka-cell--locked");
       const svg = cell.querySelector(".lotka-cell-content svg, svg");
-      if (svg) {
+      if (svg && isLocked) {
         const ariaLabel = (svg.getAttribute("aria-label") || "").toLowerCase();
         if (ariaLabel === "sun") {
           grid[row][col] = SUN;
@@ -422,7 +422,16 @@
 
         if (cell.classList.contains("lotka-cell--locked")) continue;
 
-        const current = currentGrid[row][col];
+        let current = EMPTY;
+        const svg = cell.querySelector(".lotka-cell-content svg, svg");
+        if (svg) {
+          const ariaLabel = (
+            svg.getAttribute("aria-label") || ""
+          ).toLowerCase();
+          if (ariaLabel === "sun") current = SUN;
+          else if (ariaLabel === "moon") current = MOON;
+        }
+
         const target = solution[row][col];
 
         if (current === target) continue;
@@ -492,14 +501,6 @@
         }
 
         const solution = solveTango(parsed.grid, parsed.constraints);
-        if (!solution) {
-          alert(
-            "Could not find a solution. The puzzle may be invalid or already solved incorrectly."
-          );
-          button.textContent = "Solve Tango";
-          button.disabled = false;
-          return;
-        }
 
         console.log("Tango: Solution found", solution);
         await applySolution(parsed.cells, parsed.grid, solution);
