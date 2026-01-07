@@ -1,22 +1,27 @@
 # LinkedIn Games Bot
 
-Bootstrap Chrome extension scaffold ready for future LinkedIn automation experiments.
+Chrome extension that automatically solves LinkedIn puzzle games.
 
-## Getting started
+## Getting Started
 
-1. Install dependencies (none required yet).
+1. Clone this repository
 2. Load the extension in Chrome:
-   - Go to `chrome://extensions/`.
-   - Enable Developer mode.
-   - Click **Load unpacked** and choose this folder.
-3. Open LinkedIn to see the content-script banner and use the popup button to ping the background service worker.
+   - Go to `chrome://extensions/`
+   - Enable **Developer mode**
+   - Click **Load unpacked** and choose this folder
+3. Navigate to a LinkedIn game (e.g., https://www.linkedin.com/games/tango/)
+4. Click the **Solve Tango** button that appears in the top-right corner
 
-## Next steps
+## How It Works
 
-- Replace placeholder UI and banner with real automation logic.
-- Add icons under an `icons/` directory and reference them from `manifest.json`.
-- Wire in build tooling (TypeScript, bundler) if the project grows.
+### Tango Solver
 
-## Development
+The Tango solver uses constraint propagation and backtracking:
 
-Use `npm init` or your preferred tooling when you start adding scripts or dependencies. For now, this repository intentionally stays tooling-free.
+1. **Parse** - Reads the game board from the DOM
+2. **Solve** - Applies game rules:
+   - Equal (=) constraints: connected cells must match
+   - Opposite (×) constraints: connected cells must differ
+   - Balance rule: each row/column needs 3 suns and 3 moons
+   - No-triple rule: max 2 consecutive same symbols
+3. **Apply** - Clicks cells to fill in the solution

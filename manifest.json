@@ -11,11 +11,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/*"],
-      "js": ["src/content.js"],
-      "run_at": "document_idle"
+      "matches": [
+        "https://www.linkedin.com/games/tango/*",
+        "https://www.linkedin.com/games/view/tango/*"
+      ],
+      "js": ["src/tango.js"],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
-  "permissions": ["storage", "scripting"],
+  "permissions": ["storage", "scripting", "tabs"],
   "host_permissions": ["https://www.linkedin.com/*"]
 }
