@@ -18,11 +18,11 @@
    * @returns {Object} { grid: number[][], constraints: Array, cells: Element[][] }
    */
   function parseTangoBoard() {
-    // Find all cells using the exact selector: div.lotka-cell
-    const cellElements = document.querySelectorAll(".lotka-cell");
+    // Find all cells using data-cell-idx attribute
+    const cellElements = document.querySelectorAll("[data-cell-idx]");
 
     if (cellElements.length === 0) {
-      console.error("Tango: Could not find game cells (.lotka-cell)");
+      console.error("Tango: Could not find game cells ([data-cell-idx])");
       return null;
     }
 
@@ -46,10 +46,9 @@
       const col = idx % GRID_SIZE;
       cells[row][col] = cell;
 
-      // Detect cell state from the SVG aria-label inside .lotka-cell-content
-      const isLocked = cell.classList.contains("lotka-cell--locked");
-      const svg = cell.querySelector(".lotka-cell-content svg, svg");
-      if (svg && isLocked) {
+      // Detect cell state from SVG or aria-label
+      const svg = cell.querySelector("svg");
+      if (svg) {
         const ariaLabel = (svg.getAttribute("aria-label") || "").toLowerCase();
         if (ariaLabel === "sun") {
           grid[row][col] = SUN;
@@ -57,58 +56,77 @@
           grid[row][col] = MOON;
         }
       }
+    });
 
-      // Look for constraints (edges) - they are children of the cell
-      // .lotka-cell-edge--down = constraint between this cell and cell below
-      // .lotka-cell-edge--right = constraint between this cell and cell to the right
+    // Parse constraints from data-testid elements
+    const constraintElements = document.querySelectorAll(
+      '[data-testid="edge-equal"], [data-testid="edge-cross"]',
+    );
 
-      const downEdge = cell.querySelector(".lotka-cell-edge--down");
-      if (downEdge && row < GRID_SIZE - 1) {
-        const edgeSvg = downEdge.querySelector("svg");
-        const edgeLabel = (
-          edgeSvg?.getAttribute("aria-label") || ""
-        ).toLowerCase();
-        if (edgeLabel === "equal") {
-          constraints.push({
-            type: EQUAL,
-            row1: row,
-            col1: col,
-            row2: row + 1,
-            col2: col,
-          });
-        } else if (edgeLabel === "cross") {
-          constraints.push({
-            type: OPPOSITE,
-            row1: row,
-            col1: col,
-            row2: row + 1,
-            col2: col,
-          });
-        }
+    const cellRects = [];
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      const cell = document.getElementById(`tango-cell-${i}`);
+      if (cell) {
+        cellRects[i] = cell.getBoundingClientRect();
       }
+    }
 
-      const rightEdge = cell.querySelector(".lotka-cell-edge--right");
-      if (rightEdge && col < GRID_SIZE - 1) {
-        const edgeSvg = rightEdge.querySelector("svg");
-        const edgeLabel = (
-          edgeSvg?.getAttribute("aria-label") || ""
-        ).toLowerCase();
-        if (edgeLabel === "equal") {
-          constraints.push({
-            type: EQUAL,
-            row1: row,
-            col1: col,
-            row2: row,
-            col2: col + 1,
-          });
-        } else if (edgeLabel === "cross") {
-          constraints.push({
-            type: OPPOSITE,
-            row1: row,
-            col1: col,
-            row2: row,
-            col2: col + 1,
-          });
+    constraintElements.forEach((el) => {
+      const testId = el.getAttribute("data-testid");
+      const type = testId === "edge-equal" ? EQUAL : OPPOSITE;
+
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        const row1 = Math.floor(i / GRID_SIZE);
+        const col1 = i % GRID_SIZE;
+        const cellRect = cellRects[i];
+        if (!cellRect) continue;
+
+        if (col1 < GRID_SIZE - 1) {
+          const rightIdx = i + 1;
+          const rightRect = cellRects[rightIdx];
+          if (rightRect) {
+            const edgeX = (cellRect.right + rightRect.left) / 2;
+            const edgeY = (cellRect.top + cellRect.bottom) / 2;
+            if (
+              Math.abs(centerX - edgeX) < 25 &&
+              Math.abs(centerY - edgeY) < 25
+            ) {
+              constraints.push({
+                type,
+                row1: row1,
+                col1: col1,
+                row2: row1,
+                col2: col1 + 1,
+              });
+              return;
+            }
+          }
+        }
+
+        if (row1 < GRID_SIZE - 1) {
+          const bottomIdx = i + GRID_SIZE;
+          const bottomRect = cellRects[bottomIdx];
+          if (bottomRect) {
+            const edgeX = (cellRect.left + cellRect.right) / 2;
+            const edgeY = (cellRect.bottom + bottomRect.top) / 2;
+            if (
+              Math.abs(centerX - edgeX) < 25 &&
+              Math.abs(centerY - edgeY) < 25
+            ) {
+              constraints.push({
+                type,
+                row1: row1,
+                col1: col1,
+                row2: row1 + 1,
+                col2: col1,
+              });
+              return;
+            }
+          }
         }
       }
     });
@@ -420,7 +438,7 @@
         const cell = cells[row][col];
         if (!cell) continue;
 
-        if (cell.classList.contains("lotka-cell--locked")) continue;
+        if (currentGrid[row][col] !== EMPTY) continue;
 
         let current = EMPTY;
         const svg = cell.querySelector(".lotka-cell-content svg, svg");
@@ -493,7 +511,7 @@
         const parsed = parseTangoBoard();
         if (!parsed) {
           alert(
-            "Could not parse the Tango board. Make sure the game is loaded."
+            "Could not parse the Tango board. Make sure the game is loaded.",
           );
           button.textContent = "Solve Tango";
           button.disabled = false;
@@ -530,7 +548,7 @@
       return;
 
     const checkForGame = () => {
-      if (document.querySelectorAll(".lotka-cell").length > 0) {
+      if (document.querySelectorAll("[data-cell-idx]").length > 0) {
         addSolveButton();
       } else {
         setTimeout(checkForGame, 500);
@@ -540,7 +558,7 @@
 
     new MutationObserver(() => {
       if (
-        document.querySelectorAll(".lotka-cell").length > 0 &&
+        document.querySelectorAll("[data-cell-idx]").length > 0 &&
         !document.getElementById("tango-solver-btn")
       ) {
         addSolveButton();
