@@ -14,13 +14,11 @@
    * @returns {Object} { grid: number[][], regions: number[][], cells: Element[][], size: number }
    */
   function parseQueensBoard() {
-    // Find all cells using the exact selector: div.queens-cell-with-border
-    const cellElements = document.querySelectorAll(".queens-cell-with-border");
+    // Find all cells using data-cell-idx attribute
+    const cellElements = document.querySelectorAll("[data-cell-idx]");
 
     if (cellElements.length === 0) {
-      console.error(
-        "Queens: Could not find game cells (.queens-cell-with-border)"
-      );
+      console.error("Queens: Could not find game cells ([data-cell-idx])");
       return null;
     }
 
@@ -44,7 +42,11 @@
       .fill(null)
       .map(() => Array(size).fill(null));
 
-    // Parse cells - position from aria-label, color from class
+    // Map color names to region IDs
+    const colorToRegion = new Map();
+    let nextRegionId = 0;
+
+    // Parse cells - position from aria-label, color from aria-label
     cellElements.forEach((cell) => {
       const ariaLabel = cell.getAttribute("aria-label") || "";
 
@@ -69,11 +71,14 @@
         grid[row][col] = EMPTY;
       }
 
-      // Detect region from cell-color-N class
-      const classList = cell.className;
-      const colorMatch = classList.match(/cell-color-(\d+)/);
+      // Detect region from color name in aria-label
+      const colorMatch = ariaLabel.match(/of\s+color\s+([^,]+),/i);
       if (colorMatch) {
-        regions[row][col] = parseInt(colorMatch[1]);
+        const colorName = colorMatch[1].trim().toLowerCase();
+        if (!colorToRegion.has(colorName)) {
+          colorToRegion.set(colorName, nextRegionId++);
+        }
+        regions[row][col] = colorToRegion.get(colorName);
       }
     });
 
@@ -154,7 +159,7 @@
           const regionId = regions[r][c];
           queensPerRegion.set(
             regionId,
-            (queensPerRegion.get(regionId) || 0) + 1
+            (queensPerRegion.get(regionId) || 0) + 1,
           );
         }
       }
@@ -328,7 +333,7 @@
         const parsed = parseQueensBoard();
         if (!parsed) {
           showMessage(
-            "Could not parse the Queens board. Make sure the game is loaded."
+            "Could not parse the Queens board. Make sure the game is loaded.",
           );
           button.textContent = "Solve Queens";
           button.disabled = false;
@@ -338,7 +343,7 @@
         const solution = solveQueens(parsed.grid, parsed.regions, parsed.size);
         if (!solution) {
           showMessage(
-            "Could not find a solution. The puzzle may be invalid or already solved incorrectly."
+            "Could not find a solution. The puzzle may be invalid or already solved incorrectly.",
           );
           button.textContent = "Solve Queens";
           button.disabled = false;
@@ -373,7 +378,7 @@
       return;
 
     const checkForGame = () => {
-      if (document.querySelectorAll(".queens-cell-with-border").length > 0) {
+      if (document.querySelectorAll("[data-cell-idx]").length > 0) {
         addSolveButton();
       } else {
         setTimeout(checkForGame, 500);
@@ -383,7 +388,7 @@
 
     new MutationObserver(() => {
       if (
-        document.querySelectorAll(".queens-cell-with-border").length > 0 &&
+        document.querySelectorAll("[data-cell-idx]").length > 0 &&
         !document.getElementById("queens-solver-btn")
       ) {
         addSolveButton();
