@@ -304,7 +304,10 @@
     }
 
     if (isSolved(solution)) {
-      return solution;
+      if (isValid(solution, constraints)) {
+        return solution;
+      }
+      return null;
     }
 
     if (!isValid(solution, constraints)) {
