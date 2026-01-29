@@ -15,5 +15,5 @@ Chrome extension that automatically solves LinkedIn puzzle games.
 ## How It Works
 
 1. **Parse** - Read the game board from the DOM
-2. **Solve** - Backtracking with constraints
-3. **Apply** - Simulate clicks to fill in the solution
+2. **Solve** - Backtracking with constraints (Tango/Queens) or Hamiltonian path (Zip)
+3. **Apply** - Simulate clicks (Tango/Queens) or arrow keys (Zip) to fill in the solution
