@@ -36,6 +36,15 @@
       "js": ["src/zip.js"],
       "run_at": "document_idle",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/games/mini-sudoku/*",
+        "https://www.linkedin.com/games/view/mini-sudoku/*"
+      ],
+      "js": ["src/mini-sudoku.js"],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "permissions": ["storage", "scripting", "tabs"],
